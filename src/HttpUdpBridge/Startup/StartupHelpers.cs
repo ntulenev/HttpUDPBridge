@@ -107,8 +107,7 @@ internal static class StartupHelpers
         _ = builder.Services.AddSingleton<UdpRequestDispatcher>();
         _ = builder.Services.AddSingleton<IUdpRequestCoordinator, UdpRequestCoordinator>();
 
-        _ = builder.Services.AddHostedService(
-            static serviceProvider => serviceProvider.GetRequiredService<UdpRequestDispatcher>());
+        _ = builder.Services.AddHostedService<UdpRequestDispatcherService>();
         _ = builder.Services.AddHostedService<UdpResponseListenerService>();
         _ = builder.Services.AddHostedService<ResponseCacheCleanupService>();
     }

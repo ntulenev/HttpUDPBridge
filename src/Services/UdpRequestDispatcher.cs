@@ -5,7 +5,6 @@ using Abstractions;
 
 using Configuration;
 
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -16,7 +15,7 @@ namespace Services;
 /// <summary>
 /// Provides a bounded single-reader request channel for sequential UDP dispatching.
 /// </summary>
-public sealed class UdpRequestDispatcher : BackgroundService
+public sealed class UdpRequestDispatcher
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UdpRequestDispatcher"/> class.
@@ -76,8 +75,12 @@ public sealed class UdpRequestDispatcher : BackgroundService
             .ConfigureAwait(false);
     }
 
-    /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    /// <summary>
+    /// Processes queued requests sequentially until cancellation or queue completion.
+    /// </summary>
+    /// <param name="stoppingToken">The cancellation token used to stop processing.</param>
+    /// <returns>A task that represents the background processing loop.</returns>
+    public async Task RunAsync(CancellationToken stoppingToken)
     {
         while (await _channel.Reader.WaitToReadAsync(stoppingToken).ConfigureAwait(false))
         {
@@ -88,12 +91,10 @@ public sealed class UdpRequestDispatcher : BackgroundService
         }
     }
 
-    /// <inheritdoc />
-    public override Task StopAsync(CancellationToken cancellationToken)
-    {
-        _ = _channel.Writer.TryComplete();
-        return base.StopAsync(cancellationToken);
-    }
+    /// <summary>
+    /// Completes the queue and prevents accepting new work items.
+    /// </summary>
+    public void Complete() => _ = _channel.Writer.TryComplete();
 
     private async Task ProcessRequestAsync(
         QueuedUdpRequest queueItem,

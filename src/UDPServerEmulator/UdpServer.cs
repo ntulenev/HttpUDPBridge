@@ -109,10 +109,12 @@ internal sealed class UdpServer : BackgroundService
         {
             return _minDelayMilliseconds;
         }
-
-        return RandomNumberGenerator.GetInt32(
+        else
+        {
+            return RandomNumberGenerator.GetInt32(
             _minDelayMilliseconds,
             _maxDelayMilliseconds + 1);
+        }
     }
 
     private static bool TryParseMessage(

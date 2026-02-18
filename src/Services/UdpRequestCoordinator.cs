@@ -73,12 +73,9 @@ public sealed class UdpRequestCoordinator : IUdpRequestCoordinator
                     .WaitAsync(timeoutSource.Token)
                     .ConfigureAwait(false);
 
-                if (!completion.HasResponse || completion.Response is null)
-                {
-                    return BridgeDispatchResult.Timeout(request.RequestId);
-                }
-
-                return BridgeDispatchResult.FromLive(completion.Response);
+                return !completion.HasResponse || completion.Response is null
+                    ? BridgeDispatchResult.Timeout(request.RequestId)
+                    : BridgeDispatchResult.FromLive(completion.Response);
             }
             catch (OperationCanceledException)
                 when (!cancellationToken.IsCancellationRequested)
