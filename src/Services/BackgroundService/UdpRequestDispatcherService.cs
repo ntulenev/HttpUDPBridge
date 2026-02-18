@@ -1,11 +1,11 @@
-using Microsoft.Extensions.Hosting;
+using Services.Logic;
 
-namespace Services;
+namespace Services.BackgroundService;
 
 /// <summary>
 /// Hosts <see cref="UdpRequestDispatcher"/> as a background worker.
 /// </summary>
-public sealed class UdpRequestDispatcherService : BackgroundService
+public sealed class UdpRequestDispatcherService : Microsoft.Extensions.Hosting.BackgroundService
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UdpRequestDispatcherService"/> class.

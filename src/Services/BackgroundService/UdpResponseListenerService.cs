@@ -2,17 +2,16 @@ using System.Net.Sockets;
 
 using Abstractions;
 
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Models;
 
-namespace Services;
+namespace Services.BackgroundService;
 
 /// <summary>
 /// Listens for UDP responses and dispatches them to cache and pending request waiters.
 /// </summary>
-public sealed class UdpResponseListenerService : BackgroundService
+public sealed class UdpResponseListenerService : Microsoft.Extensions.Hosting.BackgroundService
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UdpResponseListenerService"/> class.

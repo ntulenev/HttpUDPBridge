@@ -2,16 +2,15 @@ using Abstractions;
 
 using Configuration;
 
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Services;
+namespace Services.BackgroundService;
 
 /// <summary>
 /// Periodically removes expired entries from the in-memory response cache.
 /// </summary>
-public sealed class ResponseCacheCleanupService : BackgroundService
+public sealed class ResponseCacheCleanupService : Microsoft.Extensions.Hosting.BackgroundService
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ResponseCacheCleanupService"/> class.

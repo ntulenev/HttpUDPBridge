@@ -2,7 +2,7 @@ using Abstractions;
 
 using Models;
 
-namespace Services;
+namespace Services.Logic;
 
 /// <summary>
 /// Coordinates HTTP request lifecycles with UDP queue dispatch behavior.

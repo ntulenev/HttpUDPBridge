@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 using Models;
 
-namespace Services;
+namespace Services.Logic;
 
 /// <summary>
 /// Provides a bounded single-reader request channel for sequential UDP dispatching.

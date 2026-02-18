@@ -4,7 +4,7 @@ using Abstractions;
 
 using Models;
 
-namespace Services;
+namespace Services.Logic;
 
 /// <summary>
 /// Provides a thread-safe in-memory registry of pending bridge requests.
