@@ -78,6 +78,19 @@ curl -X POST http://localhost:5030/bridge ^
   -d "{\"payload\":\"hello\"}"
 ```
 
+### Communication Example
+
+```text
+C:\>curl -X POST http://localhost:5030/bridge -H "Content-Type: application/json" -d "{\"payload\":\"hello\"}"
+{"requestId":"2CF24DBA5FB0A30E26E83B2AC5B9E29E1B161E5C1FA7425E73043362938B9824","error":"UDP response timeout. Retry with the same payload or request id."}
+
+C:\>curl -X POST http://localhost:5030/bridge -H "Content-Type: application/json" -d "{\"payload\":\"hello\"}"
+{"requestId":"2CF24DBA5FB0A30E26E83B2AC5B9E29E1B161E5C1FA7425E73043362938B9824","payload":"emulator:hello","fromCache":true,"receivedAtUtc":"2026-02-18T22:12:37.6414021+00:00"}
+
+C:\>curl -X POST http://localhost:5030/bridge -H "Content-Type: application/json" -d "{\"payload\":\"hello2\"}"
+{"requestId":"87298CC2F31FBA73181EA2A9E6EF10DCE21ED95E98BDAC9C4E1504EA16F486E4","payload":"emulator:hello2","fromCache":false,"receivedAtUtc":"2026-02-18T22:13:30.792537+00:00"}
+```
+
 ### Mermaid Diagram 1: Services Schema
 
 ```mermaid
