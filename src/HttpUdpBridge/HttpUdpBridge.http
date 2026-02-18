@@ -1,0 +1,14 @@
+@HttpUdpBridge_HostAddress = http://localhost:5030
+
+POST {{HttpUdpBridge_HostAddress}}/bridge
+Content-Type: application/json
+
+{
+  "payload": "ping"
+}
+
+###
+GET {{HttpUdpBridge_HostAddress}}/bridge/some-request-id
+
+###
+GET {{HttpUdpBridge_HostAddress}}/hc
