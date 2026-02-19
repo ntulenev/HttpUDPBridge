@@ -8,6 +8,7 @@
   <Project Path="Configuration.Tests/Configuration.Tests.csproj" />
   <Project Path="Configuration/Configuration.csproj" />
   <Project Path="HttpUdpBridge/HttpUdpBridge.csproj" />
+  <Project Path="HttpUdpBridge.Tests/HttpUdpBridge.Tests.csproj" />
   <Project Path="Models.Tests/Models.Tests.csproj" />
   <Project Path="Models/Models.csproj" />
   <Project Path="Services.Tests/Services.Tests.csproj" />
@@ -15,4 +16,5 @@
   <Project Path="Transport.Tests/Transport.Tests.csproj" />
   <Project Path="Transport/Transport.csproj" />
   <Project Path="UDPServerEmulator/UDPServerEmulator.csproj" />
+  <Project Path="UDPServerEmulator.Tests/UDPServerEmulator.Tests.csproj" />
 </Solution>

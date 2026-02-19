@@ -137,7 +137,7 @@ public sealed class UdpRequestCoordinatorTests
             responseCacheMock.Object,
             dispatcher);
         var request = new BridgeRequest(requestId, "payload-live");
-        CachedUdpResponse? cacheHit = cachedResponse;
+        var cacheHit = cachedResponse;
 
         responseCacheMock
             .Setup(cache => cache.TryGet(requestId, out cacheHit))
