@@ -63,6 +63,80 @@ public sealed class BridgeEndpointsTests
         errorValue.Should().Be("Payload must not be empty.");
     }
 
+    [Fact(DisplayName = "POST /bridge returns payload too large when payload exceeds maximum length")]
+    [Trait("Category", "Integration")]
+    public async Task PostBridgeReturnsPayloadTooLargeWhenPayloadExceedsMaximumLengthAsync()
+    {
+        // Arrange
+        var coordinator = new DelegateUdpRequestCoordinator((_, _, _) =>
+            throw new InvalidOperationException("Coordinator should not be invoked."));
+        await using var app = await CreateApplicationAsync(
+            coordinator,
+            new InMemoryResponseCache());
+        var payload = new string('x', 8193);
+
+        // Act
+        var response = await app.Client.PostAsJsonAsync(
+            "/bridge",
+            new BridgeHttpRequest(payload));
+
+        // Assert
+        response.StatusCode.Should().Be((HttpStatusCode)StatusCodes.Status413PayloadTooLarge);
+        var errorValue = await ReadJsonPropertyAsync(response, "error");
+        errorValue.Should().Be("Payload exceeds 8192 characters.");
+    }
+
+    [Fact(DisplayName = "POST /bridge returns bad request when request id header format is invalid")]
+    [Trait("Category", "Integration")]
+    public async Task PostBridgeReturnsBadRequestWhenRequestIdHeaderFormatIsInvalidAsync()
+    {
+        // Arrange
+        var coordinator = new DelegateUdpRequestCoordinator((_, _, _) =>
+            throw new InvalidOperationException("Coordinator should not be invoked."));
+        await using var app = await CreateApplicationAsync(
+            coordinator,
+            new InMemoryResponseCache());
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/bridge")
+        {
+            Content = JsonContent.Create(new BridgeHttpRequest("payload"))
+        };
+        request.Headers.Add("X-Request-Id", "invalid id!");
+
+        // Act
+        var response = await app.Client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var errorValue = await ReadJsonPropertyAsync(response, "error");
+        errorValue.Should().Be(
+            "Request id format is invalid. Allowed: letters, digits, '-', '_', '.', ':'.");
+    }
+
+    [Fact(DisplayName = "POST /bridge returns payload too large when request id header exceeds maximum length")]
+    [Trait("Category", "Integration")]
+    public async Task PostBridgeReturnsPayloadTooLargeWhenRequestIdHeaderExceedsMaximumLengthAsync()
+    {
+        // Arrange
+        var coordinator = new DelegateUdpRequestCoordinator((_, _, _) =>
+            throw new InvalidOperationException("Coordinator should not be invoked."));
+        await using var app = await CreateApplicationAsync(
+            coordinator,
+            new InMemoryResponseCache());
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/bridge")
+        {
+            Content = JsonContent.Create(new BridgeHttpRequest("payload"))
+        };
+        request.Headers.Add("X-Request-Id", new string('a', 129));
+
+        // Act
+        var response = await app.Client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be((HttpStatusCode)StatusCodes.Status413PayloadTooLarge);
+        var errorValue = await ReadJsonPropertyAsync(response, "error");
+        errorValue.Should().Be("Request id exceeds 128 characters.");
+    }
+
     [Fact(DisplayName = "POST /bridge honors request id header and returns coordinator response")]
     [Trait("Category", "Integration")]
     public async Task PostBridgeHonorsRequestIdHeaderAndReturnsCoordinatorResponseAsync()
@@ -223,6 +297,47 @@ public sealed class BridgeEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var errorValue = await ReadJsonPropertyAsync(response, "error");
         errorValue.Should().Be("Response not found.");
+    }
+
+    [Fact(DisplayName = "GET /bridge/{requestId} returns bad request when request id format is invalid")]
+    [Trait("Category", "Integration")]
+    public async Task GetBridgeReturnsBadRequestWhenRequestIdFormatIsInvalidAsync()
+    {
+        // Arrange
+        var coordinator = new DelegateUdpRequestCoordinator((_, _, _) =>
+            throw new InvalidOperationException("Coordinator should not be invoked."));
+        await using var app = await CreateApplicationAsync(
+            coordinator,
+            new InMemoryResponseCache());
+
+        // Act
+        var response = await app.Client.GetAsync(CreateRelativeUri("/bridge/invalid%20id"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var errorValue = await ReadJsonPropertyAsync(response, "error");
+        errorValue.Should().Be(
+            "Request id format is invalid. Allowed: letters, digits, '-', '_', '.', ':'.");
+    }
+
+    [Fact(DisplayName = "GET /bridge/{requestId} returns payload too large when request id exceeds maximum length")]
+    [Trait("Category", "Integration")]
+    public async Task GetBridgeReturnsPayloadTooLargeWhenRequestIdExceedsMaximumLengthAsync()
+    {
+        // Arrange
+        var coordinator = new DelegateUdpRequestCoordinator((_, _, _) =>
+            throw new InvalidOperationException("Coordinator should not be invoked."));
+        await using var app = await CreateApplicationAsync(
+            coordinator,
+            new InMemoryResponseCache());
+
+        // Act
+        var response = await app.Client.GetAsync(CreateRelativeUri($"/bridge/{new string('a', 129)}"));
+
+        // Assert
+        response.StatusCode.Should().Be((HttpStatusCode)StatusCodes.Status413PayloadTooLarge);
+        var errorValue = await ReadJsonPropertyAsync(response, "error");
+        errorValue.Should().Be("Request id exceeds 128 characters.");
     }
 
     [Fact(DisplayName = "GET /hc returns healthy status")]

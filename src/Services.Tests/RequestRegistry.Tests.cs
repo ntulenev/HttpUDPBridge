@@ -42,8 +42,8 @@ public sealed class RequestRegistryTests
         second.IsOwner.Should().BeFalse();
         second.Completion.Should().BeSameAs(first.Completion);
 
-        registry.Release(requestId);
-        registry.Release(requestId);
+        registry.Release(first);
+        registry.Release(second);
     }
 
     [Fact(DisplayName = "TryCompleteWithResponse returns false when request is missing")]
@@ -86,7 +86,7 @@ public sealed class RequestRegistryTests
         result.HasResponse.Should().BeTrue();
         result.Response.Should().Be(response);
 
-        registry.Release(requestId);
+        registry.Release(registration);
     }
 
     [Fact(DisplayName = "TryCompleteWithoutResponse completes pending request")]
@@ -106,7 +106,7 @@ public sealed class RequestRegistryTests
         completed.Should().BeTrue();
         result.Should().Be(PendingUdpRequestResult.NoResponse);
 
-        registry.Release(requestId);
+        registry.Release(registration);
     }
 
     [Fact(DisplayName = "Release after completion removes request state")]
@@ -118,12 +118,12 @@ public sealed class RequestRegistryTests
         const string requestId = "request-1";
 
         var first = registry.Register(requestId);
-        _ = registry.Register(requestId);
+        var second = registry.Register(requestId);
         _ = registry.TryCompleteWithoutResponse(requestId);
 
         // Act
-        registry.Release(requestId);
-        registry.Release(requestId);
+        registry.Release(first);
+        registry.Release(second);
         var next = registry.Register(requestId);
 
         // Assert
@@ -132,6 +132,29 @@ public sealed class RequestRegistryTests
         next.Completion.IsCompleted.Should().BeFalse();
 
         _ = registry.TryCompleteWithoutResponse(requestId);
-        registry.Release(requestId);
+        registry.Release(next);
+    }
+
+    [Fact(DisplayName = "Register replaces completed state with fresh cycle")]
+    [Trait("Category", "Unit")]
+    public void RegisterReplacesCompletedStateWithFreshCycle()
+    {
+        // Arrange
+        var registry = new RequestRegistry();
+        const string requestId = "request-1";
+        var first = registry.Register(requestId);
+        _ = registry.TryCompleteWithoutResponse(requestId);
+
+        // Act
+        var next = registry.Register(requestId);
+
+        // Assert
+        next.IsOwner.Should().BeTrue();
+        next.Completion.Should().NotBeSameAs(first.Completion);
+        next.Completion.IsCompleted.Should().BeFalse();
+
+        registry.Release(first);
+        _ = registry.TryCompleteWithoutResponse(requestId);
+        registry.Release(next);
     }
 }

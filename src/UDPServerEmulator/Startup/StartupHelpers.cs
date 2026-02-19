@@ -60,8 +60,6 @@ internal static class StartupHelpers
             .ValidateOnStart();
     }
 
-    private static void RegisterServices(HostApplicationBuilder builder)
-    {
+    private static void RegisterServices(HostApplicationBuilder builder) =>
         _ = builder.Services.AddHostedService<UdpServer>();
-    }
 }

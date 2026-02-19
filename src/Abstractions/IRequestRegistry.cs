@@ -32,6 +32,8 @@ public interface IRequestRegistry
     /// <summary>
     /// Releases one HTTP waiter for the specified request identifier.
     /// </summary>
-    /// <param name="requestId">The request identifier.</param>
-    void Release(string requestId);
+    /// <param name="registration">
+    /// The registration previously returned by <see cref="Register"/>.
+    /// </param>
+    void Release(PendingRequestRegistration registration);
 }

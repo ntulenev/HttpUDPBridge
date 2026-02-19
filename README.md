@@ -120,44 +120,57 @@ sequenceDiagram
     participant L as UdpResponseListenerService
 
     C->>E: POST /bridge {payload}
-    E->>Co: DispatchAsync(request, httpTimeout)
-    Co->>Ca: TryGet(requestId)
+    alt Payload is empty / too large
+        E-->>C: 400 Bad Request / 413 Payload Too Large
+    else Payload is valid
+        E->>E: Resolve and validate requestId header (or hash payload)
+        alt RequestId invalid / too large
+            E-->>C: 400 Bad Request / 413 Payload Too Large
+        else RequestId is valid
+            E->>Co: DispatchAsync(request, httpTimeout)
+            Co->>Ca: TryGet(requestId)
 
-    alt Cache hit
-        Ca-->>Co: Cached response
-        Co-->>E: FromCache
-        E-->>C: 200 OK
-    else Cache miss
-        Co->>R: Register(requestId)
-        alt First (owner) request
-            Co->>D: EnqueueAsync(request)
-        end
-        Co->>R: Wait completion (HTTP timeout)
+            alt Cache hit
+                Ca-->>Co: Cached response
+                Co-->>E: FromCache
+                E-->>C: 200 OK
+            else Cache miss
+                Co->>R: Register(requestId)
+                alt First (owner) request
+                    Co->>D: EnqueueAsync(request)
+                end
+                Note over Co: WaitAsync(registration.Completion, httpTimeout)
 
-        loop Up to MaxAttempts
-            D->>T: SendAsync(request)
-            T->>U: UDP request
-            D->>D: Wait AttemptTimeout / RetryDelay
-        end
+                loop Up to MaxAttempts
+                    D->>T: SendAsync(request)
+                    T->>U: UDP request
+                    D->>D: Wait AttemptTimeout / RetryDelay
+                end
 
-        U-->>T: UDP response
-        L->>T: ReceiveAsync()
-        T-->>L: UdpResponsePacket
-        L->>Ca: Store(response)
-        L->>R: TryCompleteWithResponse(requestId)
+                L->>T: ReceiveAsync()
+                U-->>T: UDP response
+                T-->>L: UdpResponsePacket
+                L->>Ca: Store(response)
+                L->>R: TryCompleteWithResponse(requestId)
 
-        alt Completed before timeout
-            R-->>Co: Completion with response
-            Co-->>E: Live response
-            E-->>C: 200 OK
-        else Timed out in HTTP
-            Co-->>E: Timeout result
-            E-->>C: 504 Gateway Timeout
+                alt Completed before timeout
+                    R-->>Co: Completion with response
+                    Co-->>E: Live response
+                    E-->>C: 200 OK
+                else Timed out in HTTP
+                    Co-->>E: Timeout result
+                    E-->>C: 504 Gateway Timeout
+                end
+            end
         end
     end
 
-    C->>E: GET /bridge/:requestId
-    E->>Ca: TryGet(requestId)
-    Ca-->>E: Cached response or null
-    E-->>C: 200 OK or 404 Not Found
+    C->>E: GET /bridge/{requestId}
+    alt RequestId is empty / invalid / too large
+        E-->>C: 400 Bad Request / 413 Payload Too Large
+    else RequestId is valid
+        E->>Ca: TryGet(requestId)
+        Ca-->>E: Cached response or null
+        E-->>C: 200 OK or 404 Not Found
+    end
 ```

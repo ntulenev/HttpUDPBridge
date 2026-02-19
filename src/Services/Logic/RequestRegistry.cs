@@ -20,7 +20,21 @@ public sealed class RequestRegistry : IRequestRegistry
         {
             if (_pendingRequests.TryGetValue(requestId, out var existingState))
             {
+                if (existingState.Completion.Task.IsCompleted)
+                {
+                    _ = _pendingRequests.TryRemove(
+                        new KeyValuePair<string, PendingRequestState>(requestId, existingState));
+                    continue;
+                }
+
                 _ = existingState.IncrementWaiters();
+                if (existingState.Completion.Task.IsCompleted)
+                {
+                    _ = existingState.DecrementWaiters();
+                    RemoveIfCompletedWithoutWaiters(requestId, existingState);
+                    continue;
+                }
+
                 return new PendingRequestRegistration(
                     requestId,
                     existingState.Completion.Task,
@@ -74,17 +88,22 @@ public sealed class RequestRegistry : IRequestRegistry
     }
 
     /// <inheritdoc />
-    public void Release(string requestId)
+    public void Release(PendingRequestRegistration registration)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
+        ArgumentNullException.ThrowIfNull(registration);
 
-        if (!_pendingRequests.TryGetValue(requestId, out var state))
+        if (!_pendingRequests.TryGetValue(registration.RequestId, out var state))
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(state.Completion.Task, registration.Completion))
         {
             return;
         }
 
         _ = state.DecrementWaiters();
-        RemoveIfCompletedWithoutWaiters(requestId, state);
+        RemoveIfCompletedWithoutWaiters(registration.RequestId, state);
     }
 
     private void RemoveIfCompletedWithoutWaiters(

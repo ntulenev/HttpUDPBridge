@@ -186,7 +186,7 @@ public sealed class UdpRequestDispatcherTests
             It.IsAny<CancellationToken>()), Times.Exactly(3));
         transportMock.VerifyNoOtherCalls();
 
-        requestRegistry.Release(requestId);
+        requestRegistry.Release(registration);
     }
 
     [Fact(DisplayName = "RunAsync stops retrying when request completes with response")]
@@ -239,7 +239,7 @@ public sealed class UdpRequestDispatcherTests
             It.IsAny<CancellationToken>()), Times.Once);
         transportMock.VerifyNoOtherCalls();
 
-        requestRegistry.Release(requestId);
+        requestRegistry.Release(registration);
     }
 
     [Fact(DisplayName = "RunAsync continues retries when send throws socket exception")]
@@ -279,7 +279,7 @@ public sealed class UdpRequestDispatcherTests
             It.IsAny<CancellationToken>()), Times.Exactly(3));
         transportMock.VerifyNoOtherCalls();
 
-        requestRegistry.Release(requestId);
+        requestRegistry.Release(registration);
     }
 
     private static IOptions<UdpRetryOptions> CreateOptions(

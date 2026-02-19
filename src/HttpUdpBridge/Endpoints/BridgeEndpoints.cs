@@ -18,6 +18,12 @@ namespace HttpUdpBridge.Endpoints;
 /// </summary>
 internal static class BridgeEndpoints
 {
+    private const int MAX_PAYLOAD_LENGTH = 8_192;
+    private const int MAX_REQUEST_ID_LENGTH = 128;
+
+    private const string REQUEST_ID_FORMAT_ERROR =
+        "Request id format is invalid. Allowed: letters, digits, '-', '_', '.', ':'.";
+
     /// <summary>
     /// Maps all bridge-related endpoints.
     /// </summary>
@@ -40,10 +46,22 @@ internal static class BridgeEndpoints
                     return Results.BadRequest(new { error = "Payload must not be empty." });
                 }
 
-                var requestId = ResolveRequestId(
+                if (request.Payload.Length > MAX_PAYLOAD_LENGTH)
+                {
+                    return Results.Json(
+                        new { error = $"Payload exceeds {MAX_PAYLOAD_LENGTH} characters." },
+                        statusCode: StatusCodes.Status413PayloadTooLarge);
+                }
+
+                if (!TryResolveRequestId(
                     context,
                     request.Payload,
-                    options.Value.RequestIdHeaderName);
+                    options.Value.RequestIdHeaderName,
+                    out var requestId,
+                    out var validationResult))
+                {
+                    return validationResult!;
+                }
 
                 var bridgeRequest = new BridgeRequest(requestId, request.Payload);
                 var timeout = TimeSpan.FromMilliseconds(
@@ -81,6 +99,12 @@ internal static class BridgeEndpoints
                     return Results.BadRequest(new { error = "Request id must not be empty." });
                 }
 
+                var requestIdValidation = ValidateRequestId(requestId);
+                if (requestIdValidation is not null)
+                {
+                    return requestIdValidation;
+                }
+
                 if (!responseCache.TryGet(requestId, out var cachedResponse))
                 {
                     return Results.NotFound(new { error = "Response not found." });
@@ -96,21 +120,67 @@ internal static class BridgeEndpoints
             });
     }
 
-    private static string ResolveRequestId(
+    private static bool TryResolveRequestId(
         HttpContext context,
         string payload,
-        string requestIdHeaderName)
+        string requestIdHeaderName,
+        out string requestId,
+        out IResult? validationResult)
     {
         if (context.Request.Headers.TryGetValue(requestIdHeaderName, out var values))
         {
             var value = values.ToString().Trim();
             if (!string.IsNullOrWhiteSpace(value))
             {
-                return value;
+                var requestIdValidation = ValidateRequestId(value);
+                if (requestIdValidation is not null)
+                {
+                    requestId = string.Empty;
+                    validationResult = requestIdValidation;
+                    return false;
+                }
+
+                requestId = value;
+                validationResult = null;
+                return true;
             }
         }
 
-        return CreateDeterministicRequestId(payload);
+        requestId = CreateDeterministicRequestId(payload);
+        validationResult = null;
+        return true;
+    }
+
+    private static IResult? ValidateRequestId(string requestId)
+    {
+        if (requestId.Length > MAX_REQUEST_ID_LENGTH)
+        {
+            return Results.Json(
+                new { error = $"Request id exceeds {MAX_REQUEST_ID_LENGTH} characters." },
+                statusCode: StatusCodes.Status413PayloadTooLarge);
+        }
+
+        if (!IsValidRequestId(requestId))
+        {
+            return Results.BadRequest(new { error = REQUEST_ID_FORMAT_ERROR });
+        }
+
+        return null;
+    }
+
+    private static bool IsValidRequestId(string requestId)
+    {
+        foreach (var symbol in requestId)
+        {
+            if (char.IsLetterOrDigit(symbol) || symbol is '-' or '_' or '.' or ':')
+            {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     private static string CreateDeterministicRequestId(string payload)

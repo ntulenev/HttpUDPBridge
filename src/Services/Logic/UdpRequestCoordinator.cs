@@ -85,7 +85,7 @@ public sealed class UdpRequestCoordinator : IUdpRequestCoordinator
         }
         finally
         {
-            _requestRegistry.Release(request.RequestId);
+            _requestRegistry.Release(registration);
         }
     }
 
